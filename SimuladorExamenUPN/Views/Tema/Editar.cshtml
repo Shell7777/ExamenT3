@@ -1,0 +1,17 @@
+﻿<h2>Editar Tema</h2>
+
+<form action="/Tema/Editar?id=@Model.Id" method="post">
+    <div class="form-group">
+        <label>Tema</label>
+        <input class="form-control" name="Nombre" value="@Model.Nombre">        
+        @Html.ValidationMessage("Nombre")
+    </div>
+    <div class="form-group">
+        <label>Descripción</label>
+        <textarea class="form-control" name="Descripcion">@Model.Descripcion</textarea>
+        <span>@ViewBag.DescripcionValicion</span>
+        @Html.ValidationMessage("Descripcion")
+    </div>
+    <button class="btn btn-primary">Guardar</button>
+    <a class="btn btn-link" href="/Tema">Cancelar</a>
+</form>
