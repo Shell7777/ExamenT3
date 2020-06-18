@@ -6,36 +6,41 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using System.Data.Entity;
+using SimuladorExamenUPN.Service;
 
 namespace SimuladorExamenUPN.Controllers
 {
     [Authorize]
     public class ExamenController : Controller
     {
-        
-
-        SimuladorContext db;
+   
+        public IExamenService service ;
+        public ILogginService logginService;
         public ExamenController()
         {            
-            db = new SimuladorContext();
+    
+            service = new ExamenService();
         }
-
+        public ExamenController(IExamenService service) {
+            this.service = service;
+        }
+        public ExamenController(IExamenService service,ILogginService  logginService)
+        {
+            this.service = service;
+            this.logginService = logginService;
+        }
         [HttpGet]
         public ActionResult Index()
         {
             Usuario logged = GetLoggedUser();
-            var examenes = db.Examenes
-                .Where(o => o.UsuarioId == logged.Id)
-                .Include(o => o.Tema)
-                .Include(o => o.Preguntas)
-                .ToList();
+            var examenes = service.GetExamenes(logged);
             return View(examenes);
         }
 
         [HttpGet]
         public ActionResult Crear()
         {
-            ViewBag.Temas = db.Temas.ToList();
+            ViewBag.Temas = service.GetTemas();
             return View(new Examen());
         }
 
@@ -52,7 +57,7 @@ namespace SimuladorExamenUPN.Controllers
                 return RedirectToAction("Index");
             }
 
-            ViewBag.Temas = db.Temas.ToList();
+            ViewBag.Temas = service.GetTemas();
             return View(examen);
         }
 
@@ -64,9 +69,8 @@ namespace SimuladorExamenUPN.Controllers
                 examenPreguta.ExamenId = examen.Id;
                 examenPreguta.PreguntaId = item.Id;
 
-                db.ExamenPreguntas.Add(examenPreguta);
+                service.AddExamenPregunta(examenPreguta);
 
-                db.SaveChanges();
             }
         }
 
@@ -74,8 +78,7 @@ namespace SimuladorExamenUPN.Controllers
         {
             examen.UsuarioId = GetLoggedUser().Id;
             examen.FechaCreacion = DateTime.Now;
-            db.Examenes.Add(examen);
-            db.SaveChanges();
+            service.AddExamen(examen);
         }
 
         private Usuario GetLoggedUser()
@@ -87,10 +90,11 @@ namespace SimuladorExamenUPN.Controllers
 
         private List<Pregunta> GenerarPreguntas(int tema, int nroPreguntas)
         {
-            var basePreguntas = db.Preguntas.Where(o => o.TemaId == tema).ToList();
+            return service.GenerarPreguntas(tema, nroPreguntas);
+            /*var basePreguntas = db.Preguntas.Where(o => o.TemaId == tema).ToList();
             return basePreguntas
                 .OrderBy(x => Guid.NewGuid())
-                .Take(nroPreguntas).ToList();
+                .Take(nroPreguntas).ToList();*/
         }
     }
 }

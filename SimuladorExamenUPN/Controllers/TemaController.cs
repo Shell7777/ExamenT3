@@ -1,5 +1,6 @@
 ﻿using SimuladorExamenUPN.DB;
 using SimuladorExamenUPN.Models;
+using SimuladorExamenUPN.Service;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -11,28 +12,31 @@ namespace SimuladorExamenUPN.Controllers
 {
     public class TemaController : Controller
     {
-        public SimuladorContext context;
+        
+        public ITemaService service;
         public TemaController()
         {
-           context = new SimuladorContext();
+      
+            service = new TemaService();
+        }
+        public TemaController(ITemaService service)
+        {
+            this.service = service;
         }
         [HttpGet]
         public ViewResult Index(string criterio)
         {
-         
-            var temas = context.Temas.Include(a=>a.Categorias.Select(o=>o.Categoria)).AsQueryable();
 
-            if (!string.IsNullOrEmpty(criterio))
-                temas = temas.Where(o => o.Nombre.Contains(criterio));
+            var temas = service.GetTemaAsqueryable(criterio);
 
             ViewBag.Criterio = criterio;
-            return View(temas.ToList());
+            return View(temas);
         }
 
         [HttpGet]
         public ViewResult Crear()
         {
-            ViewBag.Categorias = context.Categorias.ToList();
+            ViewBag.Categorias = service.GetCategoria();
             ViewBag.Message = "Pantalla de crear";
             return View(new Tema());
         }
@@ -41,20 +45,19 @@ namespace SimuladorExamenUPN.Controllers
         public ActionResult Crear(Tema tema,List<int> Ids)
         {
 
-            ViewBag.Categorias = context.Categorias.ToList();           
+            ViewBag.Categorias = service.GetCategoria();           
 
             if (ModelState.IsValid == true)
             {
-               
-                context.Temas.Add(tema);
-                context.SaveChanges();
+
+                service.AddCategoria(tema);
                
 
                 foreach (var categoriaid in Ids)
                 {
                    var temaCategoria = new TemaCategoria() { CategoriaId = categoriaid, TemaId = tema.Id };
-                    context.TemaCategorias.Add(temaCategoria);
-                    context.SaveChanges();
+                    service.AddTemaCategoria(temaCategoria);
+                    
                 }
                 return RedirectToAction("Index");
             }
@@ -67,9 +70,9 @@ namespace SimuladorExamenUPN.Controllers
 
         [HttpGet]
         public ViewResult Editar(int id)
-        {  
-            
-            Tema tema = context.Temas.Where(x => x.Id == id).First();
+        {
+
+            Tema tema = service.GetTemasWhere(id);
             
                       
             return View(tema);
@@ -80,9 +83,7 @@ namespace SimuladorExamenUPN.Controllers
         {      
             if (ModelState.IsValid == true)
             {
-                context.Entry(tema).State = EntityState.Modified;
-                context.SaveChanges();
-                return RedirectToAction("Index");
+                service.Editar(tema);
             }
 
             return View(tema);
@@ -91,10 +92,7 @@ namespace SimuladorExamenUPN.Controllers
         [HttpGet]
         public ActionResult Eliminar(int id)
         {
-           
-            Tema tema = context.Temas.Where(x => x.Id == id).First();
-            context.Temas.Remove(tema);
-            context.SaveChanges();
+            service.Eliminar(id);
 
             return RedirectToAction("Index");
         }

@@ -1,5 +1,6 @@
 ﻿using SimuladorExamenUPN.DB;
 using SimuladorExamenUPN.Models;
+using SimuladorExamenUPN.Service;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
@@ -11,20 +12,21 @@ namespace SimuladorExamenUPN.Controllers
 {
     public class PreguntaController : Controller
     {
-        private SimuladorContext context;
+      //  private SimuladorContext context;
+        IPreguntaService service;
 
         public PreguntaController()
         {
-            context = new SimuladorContext();
+           //context = new SimuladorContext();
+            service = new PreguntaService();
         }
-
+        public PreguntaController(IPreguntaService service) {
+            this.service = service;        
+        }
         [HttpGet]
         public ActionResult Index(int temaId)
         {
-            var tema = context.Temas
-                .Include(o => o.Preguntas.Select(x => x.Alternativas))
-                .Where(x => x.Id == temaId)
-                .FirstOrDefault();
+            var tema = service.getTema(temaId);
 
             return View(tema);
         }
@@ -32,7 +34,7 @@ namespace SimuladorExamenUPN.Controllers
         [HttpGet]
         public ActionResult Crear(int temaId)
         {
-            ViewBag.Tema = context.Temas.Find(temaId);
+            ViewBag.Tema = service.getTemaCrear(temaId);
             return View(new Pregunta());
         }
 
@@ -42,12 +44,11 @@ namespace SimuladorExamenUPN.Controllers
             Validar(pregunta);
             if (!ModelState.IsValid)
             {
-                ViewBag.Tema = context.Temas.Find(pregunta.TemaId);
+                ViewBag.Tema = service.getTemaCrear(pregunta.Id);
                 return View(pregunta);
             }
-
-            context.Preguntas.Add(pregunta);
-            context.SaveChanges();
+            service.AddPregunta(pregunta);
+            
 
             return RedirectToAction("Index", new { temaId = pregunta.TemaId });
         }
@@ -55,8 +56,8 @@ namespace SimuladorExamenUPN.Controllers
         [HttpGet]
         public ActionResult Editar(int id)
         {            
-            var pregunta = context.Preguntas.Find(id);
-            ViewBag.Tema = context.Temas.Find(pregunta.TemaId);
+            var pregunta = service.GetPregunta(id);
+            ViewBag.Tema = service.getTemaCrear(pregunta.TemaId);
             return View(pregunta);
         }
 
@@ -65,11 +66,10 @@ namespace SimuladorExamenUPN.Controllers
         {
             if (!ModelState.IsValid)
             {
-                ViewBag.Tema = context.Temas.Find(pregunta.TemaId);
+                ViewBag.Tema = service.getTemaCrear(pregunta.TemaId);
                 return View(pregunta);
             }
-            context.Entry(pregunta).State = EntityState.Modified;
-            context.SaveChanges();
+            service.Editar(pregunta);
 
             return RedirectToAction("Index", new { temaId = pregunta.TemaId });
         }
@@ -77,9 +77,7 @@ namespace SimuladorExamenUPN.Controllers
         [HttpGet]
         public ActionResult Eliminar(int id)
         {
-            var pregunta = context.Preguntas.Find(id);
-            context.Preguntas.Remove(pregunta);
-            context.SaveChanges();
+            service.Eliminar(id);
 
             return RedirectToAction("Index");
         }
